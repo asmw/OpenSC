@@ -109,7 +109,7 @@ static const char *option_help[] = {
 /* v */	"Verbose operation. Use several times to enable debug output.",
 /* V */	"Show version number",
 	"Verify PIN (CHV1, CHV2, CHV3...)",
-	"PIN string"
+	"PIN string. If '-' is supplied, the pin is read from stdin (beware: blocking!)"
 };
 
 static const struct ef_name_map openpgp_data[] = {
@@ -224,7 +224,8 @@ static void display_data(const struct ef_name_map *mapping, char *value)
 
 static int decode_options(int argc, char **argv)
 {
-	int c;
+	int c, l;
+	size_t pinlen;
 
 	while ((c = getopt_long(argc, argv,"r:x:CUG:L:hwvV", options, (int *) 0)) != EOF) {
 		switch (c) {
@@ -254,6 +255,15 @@ static int decode_options(int argc, char **argv)
 			if (pin)
 				free(pin);
 			pin = strdup(optarg);
+			if(0 == strcmp(pin, "-")) {
+				l = getline(&pin, &pinlen, stdin);
+				if (-1 == l) {
+					printf("Error reading PIN from stdin.\n");
+					exit(EXIT_FAILURE);
+				}
+				// Throw away the newline
+				pin[l - 1] = '\0';
+			}
 			break;
 		case 'C':
 			opt_cardinfo++;
